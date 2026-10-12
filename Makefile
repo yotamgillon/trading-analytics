@@ -37,8 +37,7 @@ ingest:  ## clean + pair fills and load the warehouse: make ingest [DATASET=priv
 transform:  ## dbt build (models + tests): make transform [DATASET=private]
 	uv run python scripts/transform.py transform --dataset $(DATASET)
 
-# Filled in by later phases
-dashboard:
-	@echo "'$@' is not implemented yet (see phased plan)"; exit 1
+dashboard:  ## open the Streamlit dashboard (builds the demo warehouse if missing)
+	uv run streamlit run src/trading_analytics/dashboard/app.py
 
 all: ingest transform test

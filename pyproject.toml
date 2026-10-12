@@ -9,11 +9,16 @@ dependencies = [
     "pandas>=3.0.6",
     "pyarrow>=26.0.0",
     "pyyaml>=6.0.3",
+    "streamlit>=1.59.1",
     "yfinance>=1.7.0",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "vl-convert-python>=1.9.0.post1",
+]
 
 [build-system]
 requires = ["hatchling"]
