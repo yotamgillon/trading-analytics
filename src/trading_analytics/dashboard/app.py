@@ -4,11 +4,18 @@ Every number comes from the dbt mart SQL run on the filtered trades (see sqlrend
 only formats and draws. Run: make dashboard
 """
 
+import sys
+from pathlib import Path
+
+# Streamlit Community Cloud installs requirements.txt but not this package itself: make
+# `import trading_analytics` work from a plain checkout (src/ layout) in that case.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import pandas as pd
 import streamlit as st
 
 from trading_analytics.dashboard import charts, data, insights
-from trading_analytics.dashboard.format import condition_table, fmt_money
+from trading_analytics.dashboard.format import condition_table, fmt_money, md
 
 st.set_page_config(page_title="Trading Analytics", page_icon="📈", layout="wide")
 
@@ -175,11 +182,15 @@ pool = dims[(dims["n_trades"] >= min_n) & (with_dur | dims["is_actionable"])]
 if pool.empty:
     st.info("No condition has that many trades yet.")
 else:
-    t1, t2 = st.columns(2)
-    t1.markdown("**Best by expectancy per trade**")
-    t1.dataframe(condition_table(pool.nlargest(5, "expectancy_net")), hide_index=True)
-    t2.markdown("**Worst by expectancy per trade**")
-    t2.dataframe(condition_table(pool.nsmallest(5, "expectancy_net")), hide_index=True)
+    # Stacked at full width: side by side, the last columns (Profit factor, Net P&L) are cut off.
+    st.markdown("**Best by expectancy per trade**")
+    st.dataframe(
+        condition_table(pool.nlargest(5, "expectancy_net")), hide_index=True, width="stretch"
+    )
+    st.markdown("**Worst by expectancy per trade**")
+    st.dataframe(
+        condition_table(pool.nsmallest(5, "expectancy_net")), hide_index=True, width="stretch"
+    )
     st.caption(
         "Ranking many conditions always produces a best and a worst, even for pure noise. "
         "The Insights below test whether the gaps are bigger than chance."
@@ -196,8 +207,8 @@ icon = {
     "insufficient data": "🟡",
 }
 for ins in found:
-    st.markdown(f"**{icon[ins.evidence]} {ins.headline}**")
-    st.markdown(ins.detail)
+    st.markdown(md(f"**{icon[ins.evidence]} {ins.headline}**"))
+    st.markdown(md(ins.detail))
     st.caption(f"Based on n = {ins.n:,} trades · evidence: {ins.evidence}")
 
 # ---- data quality --------------------------------------------------------------------------

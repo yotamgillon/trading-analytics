@@ -5,6 +5,7 @@ import altair as alt
 import pandas as pd
 
 BLUE, RED, MID = "#2a78d6", "#e34948", "#f0efec"
+CHROME_PX = 130  # legend + axis labels + axis title
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
 
@@ -137,4 +138,6 @@ def heatmap(cells: pd.DataFrame, metric_label: str, min_n: int) -> alt.Chart:
     grey = base.mark_rect(
         stroke="#fcfcfb", strokeWidth=2, color="#898781", opacity=0.12
     ).transform_filter(alt.datum.n_trades < min_n)
-    return _base((cells_layer + grey).properties(height=64 * len(days)))
+    # Streamlit fits legend + axes INSIDE the chart height, so add room for them on top of the
+    # 64px-per-row the cells should get.
+    return _base((cells_layer + grey).properties(height=64 * len(days) + CHROME_PX))

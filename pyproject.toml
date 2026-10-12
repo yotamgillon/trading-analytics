@@ -47,3 +47,7 @@ src = ["src", "tests", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# the app puts src/ on sys.path before importing the package (Streamlit Cloud, see app.py)
+"src/trading_analytics/dashboard/app.py" = ["E402", "I001"]

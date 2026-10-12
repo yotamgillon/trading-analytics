@@ -17,8 +17,7 @@ DIMENSION_LABELS = {
 }
 
 TABLE_COLUMNS = {
-    "dimension": "Condition",
-    "bucket": "Bucket",
+    "condition": "Condition",
     "n_trades": "Trades",
     "win_rate": "Win rate",
     "expectancy_net": "Expectancy",
@@ -44,7 +43,8 @@ def fmt_num(x, decimals: int = 2) -> str:
 
 def condition_table(df: pd.DataFrame):
     """A styled, human-readable conditions table (used for best and worst)."""
-    shown = df[list(TABLE_COLUMNS)].assign(dimension=lambda d: d["dimension"].map(DIMENSION_LABELS))
+    label = df["dimension"].map(DIMENSION_LABELS).fillna(df["dimension"])
+    shown = df.assign(condition=label + " = " + df["bucket"].astype(str))[list(TABLE_COLUMNS)]
     shown = shown.rename(columns=TABLE_COLUMNS)
     return shown.style.format(
         {
@@ -54,3 +54,8 @@ def condition_table(df: pd.DataFrame):
             "Net P&L": fmt_money,
         }
     )
+
+
+def md(text: str) -> str:
+    """Streamlit markdown treats $...$ as LaTeX; escape dollars so money stays money."""
+    return text.replace("$", "\\$")

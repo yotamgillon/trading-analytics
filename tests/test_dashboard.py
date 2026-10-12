@@ -297,3 +297,10 @@ def test_private_toggle_uses_the_private_warehouse_and_masks_accounts(
     assert at.sidebar.checkbox[0].value is True  # ...but names are hidden by default for private
     page_text = " ".join(m.value for m in at.markdown) + " ".join(c.value for c in at.caption)
     assert "DEMO" not in page_text
+
+
+def test_insight_text_escapes_dollars_so_money_is_not_rendered_as_latex(app):
+    at = app.run()
+    costs = next(m.value for m in at.markdown if "That is about" in m.value)
+    assert "\\$" in costs  # escaped; two raw $ in one paragraph would be typeset as math
+    assert "$" not in costs.replace("\\$", "")

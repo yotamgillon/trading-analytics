@@ -1,4 +1,4 @@
-.PHONY: setup test lint guard demo-data demo-db docker-build docker-run docker-smoke bars quality quality-demo reconcile ingest transform dashboard all
+.PHONY: setup test lint guard demo-data demo-db docker-build docker-run docker-smoke cloud-check bars quality quality-demo reconcile ingest transform dashboard all
 
 setup:  ## install deps and enable the git hook that blocks private data
 	uv sync --all-extras
@@ -29,6 +29,9 @@ docker-run:  ## serve the dashboard on http://localhost:8501
 docker-smoke:  ## image checks: contents, health, app renders (needs the image)
 	scripts/docker_smoke.sh trading-analytics
 
+cloud-check:  ## run the dashboard in an env with ONLY requirements.txt (like Streamlit Cloud)
+	scripts/cloud_check.sh
+
 bars:  ## fetch/accumulate real Yahoo bars into data/warehouse/market.duckdb (gitignored)
 	uv run python scripts/daily_bars.py
 
@@ -52,4 +55,6 @@ transform:  ## dbt build (models + tests): make transform [DATASET=private]
 dashboard:  ## open the Streamlit dashboard (builds the demo warehouse if missing)
 	uv run streamlit run src/trading_analytics/dashboard/app.py
 
-all: ingest transform test
+# `make all` = everything end to end. On your own data: make all DATASET=private
+# (also compares against data/private/expected.yaml; you run this, it is never read by Claude).
+all: lint ingest transform test $(if $(filter private,$(DATASET)),reconcile)

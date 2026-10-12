@@ -35,13 +35,13 @@ def test_condition_table_uses_human_names_and_formats():
     styler = condition_table(df)
     assert list(styler.data.columns) == [
         "Condition",
-        "Bucket",
         "Trades",
         "Win rate",
         "Expectancy",
         "Profit factor",
         "Net P&L",
     ]
+    assert styler.data["Condition"].iloc[0] == "Volatility regime = low"
     html = styler.to_html()
     assert "Volatility regime" in html and "-$68.87" in html and "42%" in html
     assert "$-" not in html and "vol_regime" not in html
@@ -78,7 +78,7 @@ def test_heatmap_hours_are_horizontal_clock_labels_and_cells_are_tall():
     spec = charts.heatmap(cells(), "Expectancy per trade ($)", 5).to_dict()
     x = spec["layer"][0]["encoding"]["x"]["axis"]
     assert x["labelAngle"] == 0 and "':00'" in x["labelExpr"]
-    assert spec["height"] >= 5 * 56
+    assert spec["height"] >= 5 * 64 + charts.CHROME_PX  # cells + legend/axis allowance
 
 
 def curve(days):
@@ -101,3 +101,11 @@ def test_equity_axis_ticks_adapt_but_months_are_consistent(days, every, fmt):
     spec = charts.equity_chart(curve(days), 0).to_dict()
     axis = spec["layer"][1]["encoding"]["x"]["axis"]
     assert axis["tickCount"] == every and axis["format"] == fmt and axis["labelAngle"] == 0
+
+
+def test_dollars_are_escaped_so_streamlit_does_not_render_them_as_math():
+    from trading_analytics.dashboard.format import md
+
+    text = "That is about $4.60 per trade (-$2,298 in total)."
+    assert md(text) == "That is about \\$4.60 per trade (-\\$2,298 in total)."
+    assert "$" not in md(text).replace("\\$", "")
