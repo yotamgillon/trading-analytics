@@ -83,3 +83,13 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   contract-day's fills fall inside their bars, then removes the median (fill - bar midpoint)
   basis; flags fills > `fill_bar_tol_pts` (5) outside the bar. A blind basis estimate adds its own
   noise and created false flags in the demo, hence the "assume zero" rule. Warn-only in dbt.
+- **Vol regime = threshold rule, not terciles of the trades.** `int_vol_regime_thresholds` stores
+  p33/p67 of the same 30-minute volatility over ALL regular-hours bars in the store (same window,
+  same >=15-valid-changes and 09:30-16:00 ET filter), and `int_trade_context` applies them
+  (`<= p33` low, `<= p67` mid, else high). An `ntile` over the trades forced a small sample into
+  exact thirds (9 trades -> 3/3/3) and said nothing about the market. Singular test
+  `vol_regime_not_forced_to_thirds` fails on rule mismatch, unordered thresholds, or a 6-60 trade
+  sample split into equal counts; pytest also proves the test catches the old tercile behaviour.
+  Caveat: thresholds are recomputed on each `dbt build`, so they are only as good as the bar store
+  (`n_bars`, `first_bar_date`, `last_bar_date` are stored beside them) and shift as bars accumulate.
+  Trades cluster at the volatile open, so regime shares are NOT expected to be thirds.

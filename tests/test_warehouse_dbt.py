@@ -91,21 +91,101 @@ def test_dist_from_open_matches_oracle(ctx, bars):
         assert r.dist_from_open_signed_pts == pytest.approx(expect * sign)
 
 
-def test_volatility_matches_oracle_and_uses_only_past_bars(ctx, bars):
+def bar_vol(bars):
+    """Oracle: std of the previous 30 one-minute changes (>= 15 valid), per bar."""
     closes = bars.set_index("ts")["close"]
     diff = closes.diff()
     diff[closes.index.to_series().diff() > pd.Timedelta(minutes=5)] = np.nan
+    return diff.shift(1).rolling(30, min_periods=15).std()
+
+
+def oracle_thresholds(bars):
+    vol = bar_vol(bars)
+    m = bars.set_index("ts")["minute_of_day_et"]
+    rth = vol[(m >= 570) & (m < 960)].dropna()
+    return rth.quantile(1 / 3), rth.quantile(2 / 3), len(rth)
+
+
+def regime(vol, p33, p67):
+    return None if pd.isna(vol) else "low" if vol <= p33 else "mid" if vol <= p67 else "high"
+
+
+def test_volatility_matches_oracle_and_uses_only_past_bars(ctx, bars):
+    vol = bar_vol(bars)
     checked = 0
     for r in ctx.itertuples():
         if pd.isna(r.vol_30m_pts):
             continue
-        before = diff[diff.index < r.entry_time.floor("min")].iloc[-30:]
-        assert r.vol_30m_pts == pytest.approx(before.std(ddof=1), rel=1e-9)
+        assert r.vol_30m_pts == pytest.approx(vol[r.entry_time.floor("min")], rel=1e-9)
         checked += 1
     assert checked > 450
+
+
+def test_regime_thresholds_come_from_all_bars_not_from_trades(wh, ctx, bars):
+    p33, p67, n = oracle_thresholds(bars)
+    th = q(wh[0], "select * from intermediate.int_vol_regime_thresholds").iloc[0]
+    assert th["p33"] == pytest.approx(p33) and th["p67"] == pytest.approx(p67)
+    assert th["n_bars"] == n and n > 40_000  # every RTH bar of the store, not 500 trades
+    expected = [regime(v, p33, p67) for v in ctx["vol_30m_pts"]]
+    assert [x if isinstance(x, str) else None for x in ctx["vol_regime"]] == expected
     assert set(ctx["vol_regime"].dropna()) == {"low", "mid", "high"}
+    # trades cluster at the volatile open, so they are NOT spread in equal thirds
     counts = ctx["vol_regime"].value_counts()
-    assert counts.max() - counts.min() <= 2  # terciles
+    assert counts.max() - counts.min() > 2
+
+
+def small_sample_warehouse(tmp_path, n_trades=9):
+    """First complete trades only (cut where the next trade is not a flip of the last one)."""
+    from trading_analytics.quality.pipeline import ingest_file
+
+    raw = pd.read_csv("data/demo/Fills.csv", dtype=str, keep_default_na=False)
+    trades = ingest_file("data/demo/Fills.csv").pairing.trades.sort_values("exit_time")
+    trades = trades.reset_index(drop=True)
+    k = n_trades
+    while trades.loc[k, "entry_time"] == trades.loc[k - 1, "exit_time"]:
+        k += 1
+    cut = raw["_timestamp"] < trades.loc[k, "entry_time"].strftime("%Y-%m-%d %H:%M:%S")
+    csv = tmp_path / "Fills.csv"
+    raw[cut].to_csv(csv, index=False)
+    db = tmp_path / "small.duckdb"
+    build_warehouse("demo", db_path=db, fills_path=csv)
+    assert run_dbt(db, quiet=True) == 0
+    return duckdb.connect(str(db), read_only=True), k
+
+
+def test_small_sample_is_not_forced_into_thirds(tmp_path, bars):
+    con, k = small_sample_warehouse(tmp_path)
+    ctx = q(con, "select * from intermediate.int_trade_context order by entry_time")
+    assert len(ctx) == k
+    p33, p67, _ = oracle_thresholds(bars)
+    expected = [regime(v, p33, p67) for v in ctx["vol_30m_pts"]]
+    assert list(ctx["vol_regime"]) == expected
+    counts = ctx["vol_regime"].value_counts()
+    assert not (len(counts) == 3 and counts.nunique() == 1), "forced equal thirds"
+
+
+def test_dbt_test_catches_forced_thirds(wh):
+    """The singular test must flag a tercile split of a small sample (the old behaviour)."""
+    con = wh[0]
+    sql = open("dbt_project/tests/vol_regime_not_forced_to_thirds.sql").read()
+    sql = sql.replace(
+        "{{ ref('int_vol_regime_thresholds') }}", "intermediate.int_vol_regime_thresholds"
+    )
+    # mutate: 9 trades, regimes assigned by ntile over the trades themselves
+    con.execute(
+        """create or replace temp table forced as
+           select * exclude (vol_regime),
+                  case ntile(3) over (order by vol_30m_pts) when 1 then 'low' when 2 then 'mid'
+                       else 'high' end as vol_regime
+           from (select * from intermediate.int_trade_context
+                 where vol_30m_pts is not null order by entry_time limit 9)"""
+    )
+    failing = con.execute(sql.replace("{{ ref('int_trade_context') }}", "forced")).fetchdf()
+    assert "small sample forced into equal thirds" in set(failing["problem"])
+    healthy = con.execute(
+        sql.replace("{{ ref('int_trade_context') }}", "intermediate.int_trade_context")
+    ).fetchdf()
+    assert healthy.empty
 
 
 def test_vix_is_previous_day_close_never_same_day(wh, ctx):

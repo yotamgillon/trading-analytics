@@ -23,6 +23,8 @@ joined as (
         o.rth_open,
         eb.open as entry_bar_open,
         v.vol_pts,
+        th.p33 as vol_p33,
+        th.p67 as vol_p67,
         x.vix_close as vix_prev_close,
         e.mae_pts, e.mfe_pts, e.mae_usd, e.mfe_usd, e.bars_used, e.mae_mfe_basis,
         e.fills_outside_bar, e.fills_no_bar
@@ -35,12 +37,13 @@ joined as (
         on eb.symbol = d.bar_symbol and eb.ts = date_trunc('minute', d.entry_time)
     left join {{ ref('int_bars_1m_vol') }} as v
         on v.symbol = d.bar_symbol and v.ts = date_trunc('minute', d.entry_time) and v.vol_n >= 15
+    left join {{ ref('int_vol_regime_thresholds') }} as th on th.bar_symbol = d.bar_symbol
     asof left join {{ ref('stg_vix') }} as x
         on d.entry_date_et > x.vix_date
     left join {{ ref('int_trade_extremes') }} as e using (trade_id)
 )
 select
-    trade_id, account, symbol, contract, side, qty, max_position, n_fills,
+    trade_id, account, symbol, contract, bar_symbol, side, qty, max_position, n_fills,
     entry_time, exit_time, trade_date, entry_price, exit_price,
     gross_pnl, fees, commissions, net_pnl,
     entry_time_et, entry_time_israel,
@@ -64,9 +67,14 @@ select
         (entry_bar_open - rth_open) * (case when side = 'Long' then 1 else -1 end) end
         as dist_from_open_signed_pts,  -- >0: trading in the direction the day has moved
     vol_pts as vol_30m_pts,
-    case when vol_pts is null then null
-         else case ntile(3) over (order by vol_pts)
-                when 1 then 'low' when 2 then 'mid' else 'high' end end as vol_regime,
+    -- regime = where this volatility sits in the distribution over ALL bars (see
+    -- int_vol_regime_thresholds), never a split of the trades themselves
+    case when vol_pts is null or vol_p33 is null then null
+         when vol_pts <= vol_p33 then 'low'
+         when vol_pts <= vol_p67 then 'mid'
+         else 'high' end as vol_regime,
+    vol_p33,
+    vol_p67,
     vix_prev_close,
     case when vix_prev_close is null then null
          when vix_prev_close < 15 then '< 15'
