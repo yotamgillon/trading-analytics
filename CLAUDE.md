@@ -26,3 +26,19 @@ Source of truth is the config table in `src/trading_analytics/ingest/instruments
 ## Stack
 Python 3.12 (uv), DuckDB, dbt-duckdb, Streamlit, pytest, ruff, Docker, GitHub Actions.
 Commands: `make setup | test | lint | guard | ingest | transform | dashboard | all`.
+
+## Key decisions so far
+- **Trade = flat-to-flat per (account, contract)** (matches Lucid). NQZ6 and MNQZ6 are separate
+  positions; never netted. FIFO lots inside a trade; flips close at the zero crossing and the
+  remainder opens a new trade (commissions split pro rata by quantity).
+- **Open position at end of data is reported as unmatched**; no exit is ever invented.
+- **`is_active=false` fills are excluded from pairing** and listed in the data quality report.
+- **UTC only**: `_timestamp` is the source of truth. The display `Timestamp` (Israel local, shifts
+  with DST) is ignored. `trade_date` is the platform's session date of the exit fill.
+- **Gross vs net**: `gross_pnl`, `net_pnl = gross - fees - commissions` are separate columns.
+  The platform's Net PnL is net; Avg Win / Avg Loss / PNL High-Low are gross. Win/loss
+  classification is configurable (`win_loss_basis`), default gross.
+- **Fees = 0, commission = per-fill total** (Tradovate export has no fees column).
+- **Reconciliation**: `make reconcile` compares against gitignored `data/private/expected.yaml`
+  (template: `docs/expected.example.yaml`). User runs it; Claude never reads those files and
+  committed tests use synthetic fixtures only.
