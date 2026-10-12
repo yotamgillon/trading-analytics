@@ -215,7 +215,8 @@ docker run --rm -p 8501:8501 \
 The demo needs no secrets, no dbt and no Yahoo: it reads the committed synthetic
 `data/demo/demo.duckdb`. In the browser:
 
-1. Push this repository to GitHub (public repositories deploy for free).
+1. Push this repository to GitHub (public or private; for a private repository Streamlit asks
+   you to grant it access to private repositories during sign-in).
 2. Go to <https://share.streamlit.io> and sign in with GitHub (allow access to the repository when asked).
 3. Click **Create app** → **Deploy a public app from GitHub**.
 4. Fill in: **Repository** `<your-user>/trading-analytics`, **Branch** `main`, **Main file path**
