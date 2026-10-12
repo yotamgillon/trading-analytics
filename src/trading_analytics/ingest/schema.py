@@ -20,25 +20,26 @@ FILL_COLUMNS = [
     "source_format",
 ]
 
-# Produced by the fill matcher (Phase 2). gross_pnl/net_pnl are split explicitly because
-# platforms report some metrics gross (avg win/loss) and others net (daily P&L).
+# Produced by the fill matcher. gross_pnl/net_pnl are split explicitly because platforms report
+# some metrics gross (avg win/loss) and others net (daily P&L).
 TRADE_COLUMNS = [
-    "trade_id",
+    "trade_id",  # "<contract>-<first fill id>": unique, deterministic, contains no account id
     "account",
     "symbol",
     "contract",
-    "side",
-    "qty",  # peak position size
-    "entry_time",
-    "exit_time",
-    "entry_price",  # average
-    "exit_price",  # average
+    "side",  # Long / Short (direction of the opening fills)
+    "qty",  # total contracts opened (entry quantity)
+    "entry_time",  # first fill of the trade
+    "exit_time",  # fill that took the position back to flat
+    "trade_date",  # platform trade_date of the exit fill (how daily P&L is attributed)
+    "entry_price",  # quantity-weighted average
+    "exit_price",  # quantity-weighted average
     "gross_pnl",
     "fees",
     "commissions",
     "net_pnl",  # gross_pnl - fees - commissions
-    "n_fills",
-    "max_position",
+    "n_fills",  # distinct fills touching the trade (a flip fill counts in both trades)
+    "max_position",  # peak open contracts during the trade
 ]
 
 
