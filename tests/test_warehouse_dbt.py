@@ -4,8 +4,8 @@ import duckdb
 import numpy as np
 import pandas as pd
 import pytest
-from scripts.transform import run_dbt
 
+from trading_analytics.dbt_runner import run_dbt
 from trading_analytics.ingest.instruments import INSTRUMENTS
 from trading_analytics.warehouse import build_warehouse
 

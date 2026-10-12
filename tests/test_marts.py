@@ -1,6 +1,5 @@
 """Marts vs independent computations: a hand-checked fixture and a pandas oracle on the demo."""
 
-import itertools
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -8,8 +7,9 @@ import duckdb
 import numpy as np
 import pandas as pd
 import pytest
-from scripts.transform import run_dbt
 
+from tests.oracle import close, pandas_metrics, path_stats
+from trading_analytics.dbt_runner import run_dbt
 from trading_analytics.ingest.instruments import INSTRUMENTS
 from trading_analytics.warehouse import build_warehouse
 
@@ -213,45 +213,6 @@ def test_dimensions_partition_the_fixture(fx):
 
 
 # ---- independent pandas oracle on the full demo ------------------------------------------
-def pandas_metrics(t: pd.DataFrame) -> dict:
-    win, loss = t["gross_pnl"] > 0, t["gross_pnl"] < 0
-    gp, gl = t.loc[win, "gross_pnl"].sum(), t.loc[loss, "gross_pnl"].sum()
-    nw, nl = t["net_pnl"] > 0, t["net_pnl"] < 0
-    costs = t["commissions"].sum() + t["fees"].sum()
-    return {
-        "n_trades": len(t),
-        "n_wins": int(win.sum()),
-        "n_losses": int(loss.sum()),
-        "n_scratch": int((~win & ~loss).sum()),
-        "win_rate": win.mean(),
-        "avg_win": t.loc[win, "gross_pnl"].mean() if win.any() else np.nan,
-        "avg_loss": t.loc[loss, "gross_pnl"].mean() if loss.any() else np.nan,
-        "expectancy_gross": t["gross_pnl"].mean(),
-        "expectancy_net": t["net_pnl"].mean(),
-        "profit_factor": gp / abs(gl) if gl else np.nan,
-        "profit_factor_net": t.loc[nw, "net_pnl"].sum() / abs(t.loc[nl, "net_pnl"].sum())
-        if nl.any()
-        else np.nan,
-        "gross_pnl": t["gross_pnl"].sum(),
-        "net_pnl": t["net_pnl"].sum(),
-        "costs": costs,
-        "costs_pct_of_gross_profit": costs / gp if gp else np.nan,
-        "avg_duration_min": t["duration_min"].mean(),
-    }
-
-
-def path_stats(t: pd.DataFrame):
-    t = t.sort_values(["exit_time", "trade_id"])
-    equity = t["net_pnl"].cumsum().to_numpy()
-    peak = np.maximum.accumulate(np.concatenate([[0.0], equity]))[1:]
-    outcomes = np.where(t["gross_pnl"] > 0, "win", np.where(t["gross_pnl"] < 0, "loss", "scratch"))
-    runs = {"win": 0, "loss": 0}
-    for key, grp in itertools.groupby(outcomes):
-        if key != "scratch":
-            runs[key] = max(runs[key], len(list(grp)))
-    return (peak - equity).max(), runs["win"], runs["loss"]
-
-
 @pytest.fixture(scope="module")
 def demo_con(tmp_path_factory):
     return build(tmp_path_factory.mktemp("demo"), source="data/demo/Fills.csv")
@@ -262,10 +223,6 @@ def ctx(demo_con):
     t = demo_con.execute("select * from marts.fct_trades_enriched").fetchdf()
     t["exit_time"] = pd.to_datetime(t["exit_time"])
     return t
-
-
-def close(a, b):
-    return (pd.isna(a) and pd.isna(b)) or a == pytest.approx(b, rel=1e-9, abs=1e-9)
 
 
 def test_every_kpi_matches_pandas_on_the_demo(demo_con, ctx):

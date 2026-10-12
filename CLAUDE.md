@@ -115,3 +115,22 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
 - **Mart tests**: dbt grain-uniqueness + consistency singular tests; pytest compares every KPI,
   dimension, heatmap cell, daily row and the equity/drawdown path against pandas/numpy, plus a
   hand-computed 9-trade fixture (exact numbers incl. streaks split by a scratch, drawdown 203.5).
+- **Dashboard (Phase 8)**: `make dashboard` (Streamlit, `src/trading_analytics/dashboard/`). It does
+  NOT re-implement metrics: `sqlrender.py` renders the real dbt mart SQL (jinja `ref`/`var` + the
+  macros in `metrics.sql`) over temp tables of the filtered trades, so date/symbol/account filters
+  change which trades are aggregated, never how. A test proves the unfiltered output equals the
+  dbt-built marts exactly. Demo/private toggle reads `data/warehouse/{demo,private}.duckdb`
+  (read-only); the demo warehouse is built on first run if missing; private falls back to demo
+  with instructions when absent. "Hide account names" defaults on for private data (screenshots).
+  "Combine selected accounts" merges them into 'All accounts' via `SELECT * REPLACE`.
+- **Insights** (`dashboard/insights.py`, 3-5 findings, each with n and an evidence label):
+  edge (sign-flip test of mean net P&L), best/worst condition, costs, longest losing streak vs
+  simulated random sequences. Conditions use only ex-ante dimensions (never duration), buckets
+  with >= 30 trades, a permutation test per dimension and Bonferroni correction across the
+  dimensions examined; non-significant gaps are labelled "within chance", never as rules. Tiny
+  samples return "insufficient data". Tests: noise stays noise, a planted edge is found, false
+  alarm rate on noise is controlled, duration never appears.
+- **Chart colors**: blue = positive/primary, red = negative, gray midpoint (diverging, RGB
+  interpolation: perceptual interpolation turned the blue arm lavender). Heatmap colors saturate at
+  the 90th percentile of |value| so one lucky cell cannot wash out the rest; cells under the
+  minimum trade count are greyed.
