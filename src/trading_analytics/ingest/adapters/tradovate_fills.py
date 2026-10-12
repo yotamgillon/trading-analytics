@@ -16,6 +16,8 @@ import pandas as pd
 
 from trading_analytics.ingest.instruments import get_instrument
 from trading_analytics.ingest.schema import FILL_COLUMNS, SchemaError, validate_fills
+from trading_analytics.quality.findings import Finding, examples_of
+from trading_analytics.quality.timezone import to_israel
 
 SOURCE = "tradovate_fills"
 _ACTION_TO_SIDE = {"0": "Buy", "1": "Sell"}
@@ -29,6 +31,44 @@ class InactiveFillsWarning(UserWarning):
 class TradovateFillsAdapter:
     name: ClassVar[str] = SOURCE
     signature: ClassVar[frozenset[str]] = frozenset({"_orderId", "Fill ID", "_timestamp"})
+    required_columns: ClassVar[tuple[str, ...]] = (
+        "_id",
+        "_orderId",
+        "_timestamp",
+        "_tradeDate",
+        "_action",
+        "_qty",
+        "_price",
+        "_active",
+        "Account",
+        "Contract",
+        "Product",
+        "commission",
+    )
+    id_column: ClassVar[str] = "_id"
+
+    def raw_checks(self, raw: pd.DataFrame) -> list[Finding]:
+        """The display `Timestamp` (Israel local, DST-aware) must equal UTC converted to Israel.
+
+        We never use the display column, but a mismatch means the export's clock or our UTC
+        parsing is off, which would silently shift every hour/session bucket.
+        """
+        raw = raw.rename(columns=str.strip)
+        utc = pd.to_datetime(raw["_timestamp"], utc=True, format="ISO8601")
+        expected = to_israel(utc).dt.strftime("%m/%d/%Y %H:%M:%S")
+        bad = expected != raw["Timestamp"].str.strip()
+        if not bad.any():
+            return []
+        return [
+            Finding(
+                "display_time_mismatch",
+                "warning",
+                int(bad.sum()),
+                "platform display time differs from UTC converted to Israel time (kept; UTC is "
+                "the source of truth)",
+                examples_of(raw.loc[bad, "_id"]),
+            )
+        ]
 
     def parse(self, raw: pd.DataFrame) -> pd.DataFrame:
         raw = raw.rename(columns=str.strip)

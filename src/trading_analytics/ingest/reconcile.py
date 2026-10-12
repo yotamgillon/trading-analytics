@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from trading_analytics.ingest import load_fills
 from trading_analytics.ingest.expected import Expected, load_expected
-from trading_analytics.ingest.fill_matcher import PairingResult, match_fills
+from trading_analytics.ingest.fill_matcher import PairingResult
+from trading_analytics.quality.pipeline import ingest_file
 
 
 @dataclass(frozen=True)
@@ -98,12 +98,12 @@ def pairing_report(fills: pd.DataFrame, result: PairingResult) -> str:
 
 
 def reconcile(fills_path: Path, expected_path: Path) -> tuple[str, bool]:
-    fills = load_fills(fills_path)
-    result = match_fills(fills)
+    ingested = ingest_file(fills_path)
+    fills, result = ingested.fills, ingested.pairing
     exp = load_expected(expected_path)
     mismatches = compare(result.trades, exp)
 
-    lines = [pairing_report(fills, result), ""]
+    lines = [ingested.report.render(), "", pairing_report(fills, result), ""]
     covered = set(exp.by_day)
     extra_days = sorted(set(result.trades["trade_date"]) - covered) if exp.by_day else []
     if extra_days:

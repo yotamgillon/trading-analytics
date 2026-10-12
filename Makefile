@@ -1,4 +1,4 @@
-.PHONY: setup test lint guard demo-data bars reconcile ingest transform dashboard all
+.PHONY: setup test lint guard demo-data bars quality quality-demo reconcile ingest transform dashboard all
 
 setup:  ## install deps and enable the git hook that blocks private data
 	uv sync
@@ -19,6 +19,12 @@ demo-data:  ## regenerate the synthetic demo export + bars (data/demo/)
 
 bars:  ## fetch/accumulate real Yahoo bars into data/warehouse/market.duckdb (gitignored)
 	uv run python scripts/daily_bars.py
+
+quality:  ## data quality report: make quality [FILE=path/to/Fills.csv]
+	uv run python scripts/quality_report.py $(FILE)
+
+quality-demo:  ## demo data with injected defects -> docs/data_quality_report_demo.md
+	uv run python scripts/quality_report.py --inject-defects --write docs/data_quality_report_demo.md
 
 reconcile:  ## compare trades from data/private/Fills.csv with data/private/expected.yaml
 	uv run python scripts/reconcile.py

@@ -56,3 +56,14 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   day older than the window can never be refilled. The demo never depends on this store.
 - **Scheduling**: run `make bars` at least every few days (daily is best) on the user's machine,
   e.g. cron `5 23 * * 1-5 cd ~/trading-analytics && make bars`. Claude does not install schedules.
+- **Data quality policy (Phase 4)**: quarantine and report, never guess or impute. Exact duplicate
+  rows are dropped; same id with different content raises `QualityError`; blank required fields,
+  off-tick prices and prices >8% from the contract-day median are excluded; `is_active=false` is
+  excluded from pairing. Anything excluded can desync position tracking, so it also raises an
+  `excluded_fills_break_pairing` warning. Weekend/holiday trade dates, trade_date vs derived CME
+  session date (rolls 18:00 ET; this rule is an assumption, check it on real data), display-time
+  vs UTC->Israel, zero or varying commission, odd quantities, inconsistent orders are warnings.
+  Reports show fill ids only, never accounts. `make quality` / `make quality-demo`;
+  `make reconcile` prints the quality report first.
+- **Clocks**: UTC is the only stored time; exchange (America/Chicago), ET and Israel are derived
+  (`quality/timezone.py`). US and Israeli DST dates differ, so never hard-code offsets.
