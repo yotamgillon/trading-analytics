@@ -67,3 +67,19 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   `make reconcile` prints the quality report first.
 - **Clocks**: UTC is the only stored time; exchange (America/Chicago), ET and Israel are derived
   (`quality/timezone.py`). US and Israeli DST dates differ, so never hard-code offsets.
+- **Warehouse + dbt (Phase 6)**: `make ingest [DATASET=demo|private]` cleans/pairs fills in Python
+  and loads `raw.*` + `ingest.*` into `data/warehouse/<dataset>.duckdb` (gitignored);
+  `make transform` runs `dbt build` (models + tests) there. Layers: raw (as exported) -> staging
+  (stg_fills/trades/bars_1m/vix) -> intermediate (int_trade_context, ...) -> marts (Phase 7).
+  Pairing stays in Python (stateful); analytics are SQL. `dbt_project/seeds/instruments.csv`
+  must match `ingest/instruments.py` (a test enforces it).
+- **MNQ trades use NQ=F bars as a proxy** (same Nasdaq-100 index; only the multiplier differs).
+- **Context has no look-ahead**: volatility is the std of the previous 30 one-minute changes
+  (excluding the entry bar); VIX is the previous day's close; distance from open uses the entry
+  minute's open bar vs the 09:30 ET bar. MAE/MFE are outcomes and are limited by 1-minute bars:
+  entry-minute bar excluded, exit-minute bar included, labelled `fills_only` when no bars lie
+  between entry and exit.
+- **Fill-vs-bar check**: assumes no basis between NQ=F and the traded contract unless <90% of a
+  contract-day's fills fall inside their bars, then removes the median (fill - bar midpoint)
+  basis; flags fills > `fill_bar_tol_pts` (5) outside the bar. A blind basis estimate adds its own
+  noise and created false flags in the demo, hence the "assume zero" rule. Warn-only in dbt.
