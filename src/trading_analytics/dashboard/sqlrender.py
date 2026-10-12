@@ -12,7 +12,8 @@ from pathlib import Path
 import duckdb
 import jinja2
 
-DBT = Path("dbt_project")
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DBT = REPO_ROOT / "dbt_project"
 MART_ORDER = [  # dependency order
     "mart_equity_curve",
     "mart_streaks",

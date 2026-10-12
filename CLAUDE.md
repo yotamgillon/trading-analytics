@@ -140,3 +140,15 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   tables use human names (Expectancy, Trades, Win rate, Profit factor, Net P&L); the heatmap always
   shows Monday-Friday and every hour from 9:00 to the last hour traded with horizontal "9:00"
   labels; the equity chart uses monthly ticks ("Feb 2026") for ranges of 60+ days.
+- **Prebuilt demo database (Phase 9)**: `data/demo/demo.duckdb` (synthetic only) is the ONE
+  database committed to git, so the deployed app needs neither dbt nor Yahoo. `make demo-db`
+  rebuilds it into a brand-new file from `data/demo/` only. The app picks, in order: explicit
+  `TRADING_DEMO_DB` > the prebuilt file > a local build (needs `uv sync --all-extras`).
+  `tests/test_demo_db.py` fails if the committed file contains anything not derived from
+  `data/demo/` (it must equal a fresh build table for table, hold only the DEMO account, and have
+  zero free pages) or if it is stale: re-run `make demo-db` after changing demo data, dbt models or
+  pairing logic. `scripts/check_no_private.py` (pre-commit hook, `make test`, CI) blocks every other
+  database, anything under `data/private|warehouse`, and any data file with "private" in its path.
+- **Lean runtime vs pipeline**: `[project].dependencies` (and `requirements.txt`, kept in sync by a
+  test) are only what the dashboard needs; dbt-duckdb and yfinance live in the `pipeline` extra
+  (`uv sync --all-extras`). A test runs the app with dbt and yfinance unimportable.

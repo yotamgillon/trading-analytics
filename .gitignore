@@ -5,6 +5,8 @@ data/warehouse/*
 !data/warehouse/.gitkeep
 *.duckdb
 *.duckdb.wal
+# The ONE database that may be committed: synthetic demo data only (see tests/test_demo_db.py).
+!data/demo/demo.duckdb
 .env
 
 # Python / tooling

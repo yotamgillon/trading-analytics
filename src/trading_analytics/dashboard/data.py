@@ -10,21 +10,40 @@ import pandas as pd
 
 from trading_analytics.dashboard.sqlrender import build_filtered_marts
 
-DEMO_DB = Path(os.environ.get("TRADING_DEMO_DB", "data/warehouse/demo.duckdb"))
-PRIVATE_DB = Path(os.environ.get("TRADING_PRIVATE_DB", "data/warehouse/private.duckdb"))
+REPO_ROOT = Path(__file__).resolve().parents[3]
+# The deployed demo reads a PREBUILT synthetic database that is committed to the repo, so it needs
+# neither dbt nor Yahoo at runtime. `make demo-db` rebuilds it; a test proves it contains nothing
+# but data derived from data/demo/.
+PREBUILT_DEMO_DB = REPO_ROOT / "data" / "demo" / "demo.duckdb"
+LOCAL_DEMO_DB = REPO_ROOT / "data" / "warehouse" / "demo.duckdb"
+# Explicit override (tests, or pointing the app at another demo build); None = automatic.
+DEMO_DB: Path | None = (
+    Path(os.environ["TRADING_DEMO_DB"]) if "TRADING_DEMO_DB" in os.environ else None
+)
+PRIVATE_DB = Path(os.environ.get("TRADING_PRIVATE_DB", REPO_ROOT / "data/warehouse/private.duckdb"))
 
 
 def ensure_demo_warehouse(db: Path | None = None) -> Path:
-    """Build the synthetic demo warehouse (ingest + dbt) if it is missing, e.g. on first deploy."""
-    db = db or DEMO_DB  # looked up at call time so tests can point it elsewhere
+    """Demo database to use: explicit > committed prebuilt > local build (dbt needed, fallback)."""
+    db = db or DEMO_DB
+    if db is None:
+        if PREBUILT_DEMO_DB.exists():
+            return PREBUILT_DEMO_DB
+        db = LOCAL_DEMO_DB
     if db.exists():
         return db
-    from trading_analytics.dbt_runner import run_dbt
+    try:
+        from trading_analytics.dbt_runner import run_dbt
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("demo database missing and dbt is not installed") from exc
     from trading_analytics.warehouse import build_warehouse
 
     build_warehouse("demo", db_path=db)
     if run_dbt(db, quiet=True) != 0:
-        raise RuntimeError("dbt build failed while preparing the demo warehouse")
+        raise RuntimeError(
+            "demo database is missing and building it failed; install the pipeline extra "
+            "(`uv sync --all-extras`) or run `make demo-db`"
+        )
     return db
 
 
