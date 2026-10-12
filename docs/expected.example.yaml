@@ -1,0 +1,13 @@
+# Template for data/private/expected.yaml (gitignored). Numbers below are FAKE.
+# Copy this file to data/private/expected.yaml and fill in what your platform dashboard shows.
+settings:
+  tolerance: 0.01          # dollars
+  win_loss_basis: gross    # how a trade is classified win/loss: gross | net
+net_pnl_total: 0.00        # NET of commissions (as Lucid reports it)
+trade_count_total: 0
+by_day:                    # keyed by Tradovate trade_date
+  2030-01-07: {net_pnl: 0.00, trades: 0, win_rate: 0.0, avg_win: 0.00, avg_loss: 0.00}
+by_symbol:
+  NQ:  {net_pnl: 0.00, trades: 0, win_rate: 0.0, avg_win: 0.00, avg_loss: 0.00}
+  MNQ: {net_pnl: 0.00, trades: 0, win_rate: 0.0, avg_win: 0.00, avg_loss: 0.00}
+# metric basis: net_pnl = NET; avg_win / avg_loss = GROSS; win_rate is a fraction (0-1)
