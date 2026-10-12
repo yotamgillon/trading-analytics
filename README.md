@@ -2,6 +2,8 @@
 
 **Where do I make money, where do I lose it, and why?**
 
+**[Live demo](https://trading-analytics-nqsyktlwufvwvbxlkbwdw7.streamlit.app)** (synthetic data, no login).
+
 An end-to-end data pipeline for futures day-trading: it ingests a broker's fill export (Tradovate
 `Fills.csv`, NQ/MNQ), cleans and pairs the fills into round-trip trades, enriches each trade with
 market context (volatility, VIX, distance from the open, MAE/MFE from 1-minute bars), models
