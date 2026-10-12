@@ -1,0 +1,10 @@
+bucket,session,start_minute,end_minute,sort_order
+Overnight,Overnight,0,240,1
+Pre-market,Pre-market,240,570,2
+Open (09:30-10:30),RTH,570,630,3
+Morning (10:30-12:00),RTH,630,720,4
+Midday (12:00-14:00),RTH,720,840,5
+Afternoon (14:00-15:30),RTH,840,930,6
+Close (15:30-16:00),RTH,930,960,7
+Post-market,Post-market,960,1080,8
+Overnight,Overnight,1080,1440,9

@@ -1,12 +1,13 @@
 """Fail if real trade data is tracked or staged in git.
 
-Allowed: data/private/.gitkeep, CSVs under data/demo/ and tests/fixtures/ (synthetic only).
+Allowed: data/private/.gitkeep, CSVs under data/demo/, tests/fixtures/ (synthetic only) and
+dbt_project/seeds/ (reference tables such as contract multipliers, not trades).
 """
 
 import subprocess
 import sys
 
-ALLOWED_CSV_PREFIXES = ("data/demo/", "tests/fixtures/")
+ALLOWED_CSV_PREFIXES = ("data/demo/", "tests/fixtures/", "dbt_project/seeds/")
 BLOCKED_PREFIXES = ("data/private/", "data/warehouse/")
 ALLOWED_FILES = {"data/private/.gitkeep", "data/warehouse/.gitkeep"}
 

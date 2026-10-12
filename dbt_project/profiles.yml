@@ -1,0 +1,10 @@
+trading:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      # Run dbt from the repo root; scripts/transform.py sets this per dataset (demo | private).
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'data/warehouse/demo.duckdb') }}"
+      threads: 1
+      settings:
+        TimeZone: UTC

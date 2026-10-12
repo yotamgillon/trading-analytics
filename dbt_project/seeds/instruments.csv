@@ -1,0 +1,5 @@
+symbol,multiplier,tick_size,bar_symbol
+NQ,20,0.25,NQ=F
+MNQ,2,0.25,NQ=F
+ES,50,0.25,ES=F
+MES,5,0.25,ES=F

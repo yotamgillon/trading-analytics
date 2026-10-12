@@ -17,3 +17,4 @@ __pycache__/
 dbt_project/target/
 dbt_project/logs/
 .DS_Store
+dbt_project/.user.yml

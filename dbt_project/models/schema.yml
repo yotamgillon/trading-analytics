@@ -1,0 +1,73 @@
+version: 2
+
+seeds:
+  - name: instruments
+    columns:
+      - name: symbol
+        tests: [unique, not_null]
+      - name: multiplier
+        tests: [not_null]
+  - name: time_buckets
+    description: Minute-of-day (ET) ranges; together they must tile 0-1440 without gaps.
+
+models:
+  - name: stg_fills
+    columns:
+      - name: fill_id
+        tests: [unique, not_null]
+      - name: side
+        tests:
+          - accepted_values: {values: ['Buy', 'Sell']}
+      - name: bar_symbol
+        description: Bar series used for this symbol; MNQ uses NQ bars as a proxy.
+        tests: [not_null]
+  - name: stg_trades
+    columns:
+      - name: trade_id
+        tests: [unique, not_null]
+      - name: side
+        tests:
+          - accepted_values: {values: ['Long', 'Short']}
+      - name: multiplier
+        tests: [not_null]
+  - name: stg_bars_1m
+    columns:
+      - name: ts
+        tests: [not_null]
+  - name: int_fill_bar_check
+    columns:
+      - name: fill_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values: {values: ['ok', 'outside_bar', 'no_bar']}
+          # Not a failure: Yahoo bars may be wrong or the basis estimate may be off; a few
+          # outliers are a prompt to look, so this only warns.
+          - share_below:
+              value: outside_bar
+              threshold: 0.05
+              config: {severity: warn}
+  - name: int_trade_extremes
+    columns:
+      - name: trade_id
+        tests: [unique, not_null]
+      - name: mae_pts
+        tests: [not_null]
+      - name: mfe_pts
+        tests: [not_null]
+  - name: int_trade_context
+    columns:
+      - name: trade_id
+        tests: [unique, not_null]
+      - name: time_bucket
+        tests: [not_null]
+      - name: weekday
+        tests: [not_null]
+      - name: vol_regime
+        tests:
+          - accepted_values:
+              values: ['low', 'mid', 'high']
+              config: {severity: warn}
+      - name: mae_mfe_basis
+        tests:
+          - accepted_values: {values: ['bars', 'fills_only']}

@@ -29,8 +29,16 @@ quality-demo:  ## demo data with injected defects -> docs/data_quality_report_de
 reconcile:  ## compare trades from data/private/Fills.csv with data/private/expected.yaml
 	uv run python scripts/reconcile.py
 
+DATASET ?= demo
+
+ingest:  ## clean + pair fills and load the warehouse: make ingest [DATASET=private]
+	uv run python scripts/transform.py ingest --dataset $(DATASET)
+
+transform:  ## dbt build (models + tests): make transform [DATASET=private]
+	uv run python scripts/transform.py transform --dataset $(DATASET)
+
 # Filled in by later phases
-ingest transform dashboard:
+dashboard:
 	@echo "'$@' is not implemented yet (see phased plan)"; exit 1
 
 all: ingest transform test

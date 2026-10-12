@@ -16,6 +16,7 @@ def test_blocks_private_and_warehouse_files():
 def test_blocks_stray_csv_but_allows_demo_and_fixtures():
     assert guard.violations({"export.csv"}) == ["export.csv"]
     assert guard.violations({"data/demo/trades.csv", "tests/fixtures/a.csv"}) == []
+    assert guard.violations({"dbt_project/seeds/instruments.csv"}) == []
 
 
 def test_allows_gitkeep_and_code():

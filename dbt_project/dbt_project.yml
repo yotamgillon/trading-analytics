@@ -1,0 +1,29 @@
+name: trading_analytics
+version: "1.0.0"
+config-version: 2
+profile: trading
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+vars:
+  # A fill may sit this many points outside its 1-minute bar (after removing the contract basis)
+  # before it is flagged. NQ=F (continuous) vs NQZ6 (specific contract) differ by the basis,
+  # which is estimated per contract-day and removed first.
+  fill_bar_tol_pts: 5.0
+  vol_lookback_bars: 30
+
+models:
+  trading_analytics:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+
+seeds:
+  trading_analytics:
+    +schema: staging

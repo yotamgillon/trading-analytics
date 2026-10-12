@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: raw
+    description: As exported / as fetched. Never modified after landing.
+    schema: raw
+    tables:
+      - name: fills_raw
+      - name: bars_1m
+      - name: vix_daily
+  - name: ingest
+    description: Python-derived tables (cleaning + FIFO pairing, which is stateful).
+    schema: ingest
+    tables:
+      - name: fills
+      - name: trades
+      - name: open_positions
+      - name: quality_findings
