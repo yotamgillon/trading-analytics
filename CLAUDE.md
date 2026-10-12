@@ -44,7 +44,8 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   committed tests use synthetic fixtures only.
 - **Demo data has no edge by construction** (`src/trading_analytics/demo/`): driftless price
   martingale, coin-flip direction, volatility-scaled stop/target, random timeouts, fixed-delay
-  (non-look-ahead) scaling. Net P&L is negative only through commissions. Verified by permutation
+  (non-look-ahead) scaling. Expected gross P&L is zero and commissions make expected net slightly negative; the REALIZED
+  P&L of any one sample (the demo's included, which happens to be positive) is just noise. Verified by permutation
   tests (`trading_analytics/stats.py`) incl. a seed-calibration test and a planted-edge power test.
 - **Duration is not an actionable condition**: it is only known after the trade and is mechanically
   coupled to the outcome. Insights (Phase 8) must not present duration as a "when to trade" finding.
@@ -93,3 +94,24 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   Caveat: thresholds are recomputed on each `dbt build`, so they are only as good as the bar store
   (`n_bars`, `first_bar_date`, `last_bar_date` are stored beside them) and shift as bars accumulate.
   Trades cluster at the volatile open, so regime shares are NOT expected to be thirds.
+- **Marts (Phase 7)**, all metrics in SQL, defined once in `dbt_project/macros/metrics.sql`:
+  `fct_trades_enriched` (trade), `mart_equity_curve` (account x symbol_scope x trade),
+  `mart_streaks` (run of wins/losses), `mart_kpis` (account x symbol_scope), `mart_perf_by_dimension`
+  (account x dimension x bucket; `is_actionable` false for duration), `mart_perf_hour_weekday`
+  (heatmap), `mart_daily_performance` (account x symbol x trade_date, ADDITIVE: sum the components
+  over any date/symbol filter and the ratios are exact). symbol_scope is 'ALL' or one symbol.
+- **Metric definitions**: win/loss by `win_loss_basis` (gross default; scratch = exactly 0 and is
+  neither); win_rate = wins / all trades; avg_win/avg_loss GROSS (avg_loss negative); payoff =
+  avg_win / |avg_loss|; expectancy_net = mean net P&L per trade (expectancy_gross also given);
+  profit_factor = gross profit / |gross loss| (profit_factor_net classifies by net); costs % of gross
+  profit always, % of gross P&L only when gross P&L > 0; streaks: a scratch ends a streak.
+- **Equity and drawdown**: equity = `start_balance` (dbt var, default 0) + cumulative NET P&L,
+  realised at each trade's exit, ordered by (exit_time, trade_id). Default start is ZERO because the
+  prop-firm balance is not in the export, so the curve is relative to the first trade. Peak =
+  max(start_balance, highest equity so far), so the starting point counts and a losing start is a
+  drawdown. Max drawdown is the largest peak-to-trough drop in dollars (balance independent);
+  drawdown % is produced only when `start_balance > 0` and is NULL otherwise (never guessed).
+  Use `dbt build --vars '{start_balance: 50000}'`. No explicit "trade 0" row; charts prepend it.
+- **Mart tests**: dbt grain-uniqueness + consistency singular tests; pytest compares every KPI,
+  dimension, heatmap cell, daily row and the equity/drawdown path against pandas/numpy, plus a
+  hand-computed 9-trade fixture (exact numbers incl. streaks split by a scratch, drawdown 203.5).
