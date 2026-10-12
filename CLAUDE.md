@@ -14,7 +14,8 @@ Portfolio project for student Data Analyst / Fintech applications. Plan: see the
 - Synthetic demo data must be realistic but contain NO planted edge.
 - Public demo must not depend on yfinance (synthetic bars or small parquet sample).
 
-## Contract multipliers (user trades NQ / MNQ / ES / MES)
+## Contract multipliers (user trades NQ and MNQ; ES/MES also configured)
+Source of truth is the config table in `src/trading_analytics/ingest/instruments.py`; unknown products fail loudly.
 | Symbol | $ per point | Tick size | Tick value |
 |--------|-------------|-----------|------------|
 | NQ     | 20          | 0.25      | 5.00       |

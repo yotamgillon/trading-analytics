@@ -3,7 +3,10 @@ name = "trading-analytics"
 version = "0.1.0"
 description = "End-to-end futures trade analytics pipeline: ingest, model in SQL, dashboard."
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "pandas>=3.0.6",
+    "pyyaml>=6.0.3",
+]
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]
