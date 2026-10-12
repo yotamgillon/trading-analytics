@@ -1283,12 +1283,18 @@ name = "trading-analytics"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "dbt-duckdb" },
     { name = "duckdb" },
+    { name = "jinja2" },
+    { name = "numpy" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "pyyaml" },
     { name = "streamlit" },
+]
+
+[package.optional-dependencies]
+pipeline = [
+    { name = "dbt-duckdb" },
     { name = "yfinance" },
 ]
 
@@ -1301,14 +1307,17 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dbt-duckdb", specifier = ">=1.11.0" },
+    { name = "dbt-duckdb", marker = "extra == 'pipeline'", specifier = ">=1.11.0" },
     { name = "duckdb", specifier = ">=1.5.6" },
+    { name = "jinja2", specifier = ">=3.1" },
+    { name = "numpy", specifier = ">=2.0" },
     { name = "pandas", specifier = ">=3.0.6" },
     { name = "pyarrow", specifier = ">=26.0.0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "streamlit", specifier = ">=1.59.1" },
-    { name = "yfinance", specifier = ">=1.7.0" },
+    { name = "yfinance", marker = "extra == 'pipeline'", specifier = ">=1.7.0" },
 ]
+provides-extras = ["pipeline"]
 
 [package.metadata.requires-dev]
 dev = [

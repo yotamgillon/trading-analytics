@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv sync
+      - run: uv sync --all-extras
       - run: make guard
       - run: make lint
       - run: uv run pytest

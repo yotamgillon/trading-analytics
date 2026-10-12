@@ -1,7 +1,7 @@
-.PHONY: setup test lint guard demo-data bars quality quality-demo reconcile ingest transform dashboard all
+.PHONY: setup test lint guard demo-data demo-db bars quality quality-demo reconcile ingest transform dashboard all
 
 setup:  ## install deps and enable the git hook that blocks private data
-	uv sync
+	uv sync --all-extras
 	git config core.hooksPath .githooks
 
 test: guard
@@ -16,6 +16,9 @@ guard:  ## fail if private/real data is tracked or staged
 
 demo-data:  ## regenerate the synthetic demo export + bars (data/demo/)
 	uv run python -m trading_analytics.demo
+
+demo-db:  ## rebuild the committed synthetic demo database data/demo/demo.duckdb
+	uv run python scripts/build_demo_db.py
 
 bars:  ## fetch/accumulate real Yahoo bars into data/warehouse/market.duckdb (gitignored)
 	uv run python scripts/daily_bars.py
