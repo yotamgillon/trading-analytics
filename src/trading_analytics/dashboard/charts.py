@@ -16,13 +16,21 @@ def _base(chart: alt.Chart) -> alt.Chart:
     )
 
 
+def _time_axis(d: pd.DataFrame) -> alt.Axis:
+    """Monthly ticks for long ranges (labelled "Feb 26"); weekly/daily when the range is short."""
+    span = (d["exit_time"].max() - d["exit_time"].min()).days if len(d) else 0
+    every = "month" if span >= 60 else "week" if span >= 14 else "day"
+    fmt = "%b %Y" if every == "month" else "%b %d"
+    return alt.Axis(tickCount=every, format=fmt, labelAngle=0, title=None)
+
+
 def equity_chart(curve: pd.DataFrame, start_balance: float) -> alt.Chart:
     d = curve.assign(exit_time=pd.to_datetime(curve["exit_time"]))
     line = (
         alt.Chart(d)
         .mark_line(color=BLUE, strokeWidth=2, interpolate="step-after")
         .encode(
-            x=alt.X("exit_time:T", title=None),
+            x=alt.X("exit_time:T", axis=_time_axis(d)),
             y=alt.Y("equity:Q", title="Equity ($)", scale=alt.Scale(zero=False)),
             tooltip=[
                 alt.Tooltip("exit_time:T", title="Exit"),
@@ -51,7 +59,7 @@ def drawdown_chart(curve: pd.DataFrame) -> alt.Chart:
             interpolate="step-after",
         )
         .encode(
-            x=alt.X("exit_time:T", title=None),
+            x=alt.X("exit_time:T", axis=_time_axis(d)),
             y=alt.Y("under:Q", title="Drawdown from peak ($)"),
             tooltip=[
                 alt.Tooltip("exit_time:T", title="Exit"),
@@ -72,6 +80,14 @@ HEAT_METRICS = {
 
 def heatmap(cells: pd.DataFrame, metric_label: str, min_n: int) -> alt.Chart:
     col, fmt = HEAT_METRICS[metric_label]
+    present = list(cells["weekday"].unique())
+    days = WEEKDAYS + [w for w in present if w not in WEEKDAYS]
+    hours = range(min(9, int(cells["hour_et"].min())), int(cells["hour_et"].max()) + 1)
+    grid = pd.MultiIndex.from_product([days, hours], names=["weekday", "hour_et"]).to_frame(
+        index=False
+    )
+    cells = grid.merge(cells, on=["weekday", "hour_et"], how="left")
+    cells["n_trades"] = cells["n_trades"].fillna(0)  # a day/hour with no trades is still shown
     d = cells.assign(
         shown=cells[col].where(cells["n_trades"] >= min_n),
         note=cells["n_trades"].map(lambda n: "" if n >= min_n else f"fewer than {min_n} trades"),
@@ -101,8 +117,12 @@ def heatmap(cells: pd.DataFrame, metric_label: str, min_n: int) -> alt.Chart:
             title=metric_label,
         )
     base = alt.Chart(d).encode(
-        x=alt.X("hour_et:O", title="Entry hour (ET)"),
-        y=alt.Y("weekday:N", sort=WEEKDAYS, title=None),
+        x=alt.X(
+            "hour_et:O",
+            title="Entry hour (ET)",
+            axis=alt.Axis(labelAngle=0, labelExpr="datum.value + ':00'"),
+        ),
+        y=alt.Y("weekday:N", sort=days, title=None),
     )
     cells_layer = base.mark_rect(stroke="#fcfcfb", strokeWidth=2).encode(
         color=color,
@@ -117,4 +137,4 @@ def heatmap(cells: pd.DataFrame, metric_label: str, min_n: int) -> alt.Chart:
     grey = base.mark_rect(
         stroke="#fcfcfb", strokeWidth=2, color="#898781", opacity=0.12
     ).transform_filter(alt.datum.n_trades < min_n)
-    return _base((cells_layer + grey).properties(height=230))
+    return _base((cells_layer + grey).properties(height=64 * len(days)))

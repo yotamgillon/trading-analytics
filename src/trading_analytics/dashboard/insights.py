@@ -14,6 +14,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from trading_analytics.dashboard.format import DIMENSION_LABELS
 from trading_analytics.stats import permutation_pvalue, signflip_pvalue
 
 MIN_BUCKET_N = 30
@@ -123,7 +124,8 @@ def _conditions(trades: pd.DataFrame, dims: pd.DataFrame, seed: int) -> list[Ins
         ("worst", cand.loc[cand["expectancy_net"].idxmin()]),
     ):
         p = adj[row["dimension"]]
-        name = f"{row['dimension']} = {row['bucket']}"
+        label = DIMENSION_LABELS.get(row["dimension"], row["dimension"])
+        name = f"{label} = {row['bucket']}"
         head = (
             f"{'Best' if kind == 'best' else 'Weakest'} condition: {name}, "
             f"{usd(row['expectancy_net'])} per trade"
@@ -134,13 +136,13 @@ def _conditions(trades: pd.DataFrame, dims: pd.DataFrame, seed: int) -> list[Ins
         )
         if p < ALPHA:
             detail = (
-                f"{base} Differences across {row['dimension']} are unlikely to be chance "
+                f"{base} Differences across \u201c{label}\u201d are unlikely to be chance "
                 f"(adjusted p = {p:.3f}, corrected for {k} dimensions examined)."
             )
             ev = "significant"
         else:
             detail = (
-                f"{base} But differences across {row['dimension']} are within what chance "
+                f"{base} But differences across \u201c{label}\u201d are within what chance "
                 f"produces (adjusted p = {p:.2f}, corrected for {k} dimensions examined). "
                 "Treat it as a lead to re-test on new trades, not a rule."
             )

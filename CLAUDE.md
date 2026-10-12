@@ -134,3 +134,9 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   interpolation: perceptual interpolation turned the blue arm lavender). Heatmap colors saturate at
   the 90th percentile of |value| so one lucky cell cannot wash out the rest; cells under the
   minimum trade count are greyed.
+- **dbt test arguments** live under `arguments:` in `schema.yml` (the old inline form is deprecated).
+  `dbt parse --show-all-deprecations` must print nothing.
+- **Display conventions** (`dashboard/format.py`): negative money is `-$68.87`, never `$-68.87`;
+  tables use human names (Expectancy, Trades, Win rate, Profit factor, Net P&L); the heatmap always
+  shows Monday-Friday and every hour from 9:00 to the last hour traded with horizontal "9:00"
+  labels; the equity chart uses monthly ticks ("Feb 2026") for ranges of 60+ days.

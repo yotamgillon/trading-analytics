@@ -8,12 +8,12 @@ import pandas as pd
 import streamlit as st
 
 from trading_analytics.dashboard import charts, data, insights
+from trading_analytics.dashboard.format import condition_table, fmt_money
 
 st.set_page_config(page_title="Trading Analytics", page_icon="📈", layout="wide")
 
 
-def money(x) -> str:
-    return "n/a" if pd.isna(x) else f"{'-' if x < 0 else ''}${abs(x):,.0f}"
+money = fmt_money
 
 
 def num(x, fmt="{:.2f}") -> str:
@@ -172,29 +172,14 @@ with_dur = col2.checkbox(
     "you can choose to trade in.",
 )
 pool = dims[(dims["n_trades"] >= min_n) & (with_dur | dims["is_actionable"])]
-shown = [
-    "dimension",
-    "bucket",
-    "n_trades",
-    "win_rate",
-    "expectancy_net",
-    "profit_factor",
-    "net_pnl",
-]
-fmt = {
-    "win_rate": "{:.0%}",
-    "expectancy_net": "${:,.2f}",
-    "profit_factor": "{:.2f}",
-    "net_pnl": "${:,.0f}",
-}
 if pool.empty:
     st.info("No condition has that many trades yet.")
 else:
     t1, t2 = st.columns(2)
     t1.markdown("**Best by expectancy per trade**")
-    t1.dataframe(pool.nlargest(5, "expectancy_net")[shown].style.format(fmt), hide_index=True)
+    t1.dataframe(condition_table(pool.nlargest(5, "expectancy_net")), hide_index=True)
     t2.markdown("**Worst by expectancy per trade**")
-    t2.dataframe(pool.nsmallest(5, "expectancy_net")[shown].style.format(fmt), hide_index=True)
+    t2.dataframe(condition_table(pool.nsmallest(5, "expectancy_net")), hide_index=True)
     st.caption(
         "Ranking many conditions always produces a best and a worst, even for pure noise. "
         "The Insights below test whether the gaps are bigger than chance."
@@ -221,7 +206,17 @@ with st.expander("Data quality and caveats"):
     if q.empty:
         st.success("No data quality issues found.")
     else:
-        st.dataframe(q[["severity", "check_name", "n", "message"]], hide_index=True)
+        st.dataframe(
+            q[["severity", "check_name", "n", "message"]].rename(
+                columns={
+                    "severity": "Severity",
+                    "check_name": "Check",
+                    "n": "Count",
+                    "message": "What it means",
+                }
+            ),
+            hide_index=True,
+        )
     basis = acct_trades["mae_mfe_basis"].value_counts()
     st.write(
         f"MAE/MFE computed from 1-minute bars for {int(basis.get('bars', 0)):,} of "
@@ -237,16 +232,22 @@ with st.expander("Data quality and caveats"):
     )
 
 with st.expander("Trades"):
-    cols = [
-        "trade_id",
-        "symbol",
-        "side",
-        "qty",
-        "entry_time",
-        "exit_time",
-        "gross_pnl",
-        "net_pnl",
-        "time_bucket",
-        "vol_regime",
-    ]
-    st.dataframe(acct_trades[cols], hide_index=True)
+    cols = {
+        "trade_id": "Trade",
+        "symbol": "Symbol",
+        "side": "Direction",
+        "qty": "Contracts",
+        "entry_time": "Entry (UTC)",
+        "exit_time": "Exit (UTC)",
+        "gross_pnl": "Gross P&L",
+        "net_pnl": "Net P&L",
+        "time_bucket": "Time of day",
+        "vol_regime": "Volatility regime",
+    }
+    table = acct_trades[list(cols)].rename(columns=cols)
+    st.dataframe(
+        table.style.format(
+            {"Gross P&L": lambda v: fmt_money(v, 2), "Net P&L": lambda v: fmt_money(v, 2)}
+        ),
+        hide_index=True,
+    )

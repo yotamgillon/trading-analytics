@@ -17,7 +17,9 @@ models:
         tests: [unique, not_null]
       - name: side
         tests:
-          - accepted_values: {values: ['Buy', 'Sell']}
+          - accepted_values:
+              arguments:
+                values: ['Buy', 'Sell']
       - name: bar_symbol
         description: Bar series used for this symbol; MNQ uses NQ bars as a proxy.
         tests: [not_null]
@@ -27,7 +29,9 @@ models:
         tests: [unique, not_null]
       - name: side
         tests:
-          - accepted_values: {values: ['Long', 'Short']}
+          - accepted_values:
+              arguments:
+                values: ['Long', 'Short']
       - name: multiplier
         tests: [not_null]
   - name: stg_bars_1m
@@ -40,12 +44,15 @@ models:
         tests: [unique, not_null]
       - name: status
         tests:
-          - accepted_values: {values: ['ok', 'outside_bar', 'no_bar']}
+          - accepted_values:
+              arguments:
+                values: ['ok', 'outside_bar', 'no_bar']
           # Not a failure: Yahoo bars may be wrong or the basis estimate may be off; a few
           # outliers are a prompt to look, so this only warns.
           - share_below:
-              value: outside_bar
-              threshold: 0.05
+              arguments:
+                value: outside_bar
+                threshold: 0.05
               config: {severity: warn}
   - name: int_vol_regime_thresholds
     columns:
@@ -74,11 +81,14 @@ models:
       - name: vol_regime
         tests:
           - accepted_values:
-              values: ['low', 'mid', 'high']
+              arguments:
+                values: ['low', 'mid', 'high']
               config: {severity: warn}
       - name: mae_mfe_basis
         tests:
-          - accepted_values: {values: ['bars', 'fills_only']}
+          - accepted_values:
+              arguments:
+                values: ['bars', 'fills_only']
 
   # ---- marts -------------------------------------------------------------------------
   - name: fct_trades_enriched
@@ -87,26 +97,40 @@ models:
         tests: [unique, not_null]
       - name: outcome
         tests:
-          - accepted_values: {values: ['win', 'loss', 'scratch']}
+          - accepted_values:
+              arguments:
+                values: ['win', 'loss', 'scratch']
   - name: mart_equity_curve
     tests:
-      - unique_grain: {columns: [account, symbol_scope, trade_id]}
+      - unique_grain:
+          arguments:
+            columns: [account, symbol_scope, trade_id]
     columns:
       - name: drawdown_usd
         tests:
           - not_null
   - name: mart_streaks
     tests:
-      - unique_grain: {columns: [account, symbol_scope, streak_id]}
+      - unique_grain:
+          arguments:
+            columns: [account, symbol_scope, streak_id]
   - name: mart_kpis
     tests:
-      - unique_grain: {columns: [account, symbol_scope]}
+      - unique_grain:
+          arguments:
+            columns: [account, symbol_scope]
   - name: mart_daily_performance
     tests:
-      - unique_grain: {columns: [account, symbol, trade_date]}
+      - unique_grain:
+          arguments:
+            columns: [account, symbol, trade_date]
   - name: mart_perf_hour_weekday
     tests:
-      - unique_grain: {columns: [account, weekday_num, hour_et]}
+      - unique_grain:
+          arguments:
+            columns: [account, weekday_num, hour_et]
   - name: mart_perf_by_dimension
     tests:
-      - unique_grain: {columns: [account, dimension, bucket]}
+      - unique_grain:
+          arguments:
+            columns: [account, dimension, bucket]
