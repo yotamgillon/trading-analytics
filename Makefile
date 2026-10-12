@@ -1,4 +1,4 @@
-.PHONY: setup test lint guard reconcile ingest transform dashboard all
+.PHONY: setup test lint guard demo-data reconcile ingest transform dashboard all
 
 setup:  ## install deps and enable the git hook that blocks private data
 	uv sync
@@ -13,6 +13,9 @@ lint:
 
 guard:  ## fail if private/real data is tracked or staged
 	python3 scripts/check_no_private.py
+
+demo-data:  ## regenerate the synthetic demo export + bars (data/demo/)
+	uv run python -m trading_analytics.demo
 
 reconcile:  ## compare trades from data/private/Fills.csv with data/private/expected.yaml
 	uv run python scripts/reconcile.py

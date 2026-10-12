@@ -42,3 +42,9 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
 - **Reconciliation**: `make reconcile` compares against gitignored `data/private/expected.yaml`
   (template: `docs/expected.example.yaml`). User runs it; Claude never reads those files and
   committed tests use synthetic fixtures only.
+- **Demo data has no edge by construction** (`src/trading_analytics/demo/`): driftless price
+  martingale, coin-flip direction, volatility-scaled stop/target, random timeouts, fixed-delay
+  (non-look-ahead) scaling. Net P&L is negative only through commissions. Verified by permutation
+  tests (`trading_analytics/stats.py`) incl. a seed-calibration test and a planted-edge power test.
+- **Duration is not an actionable condition**: it is only known after the trade and is mechanically
+  coupled to the outcome. Insights (Phase 8) must not present duration as a "when to trade" finding.
