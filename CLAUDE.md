@@ -48,3 +48,11 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   tests (`trading_analytics/stats.py`) incl. a seed-calibration test and a planted-edge power test.
 - **Duration is not an actionable condition**: it is only known after the trade and is mechanically
   coupled to the outcome. Insights (Phase 8) must not present duration as a "when to trade" finding.
+- **Real market bars (Phase 5, done before Phase 4)**: `make bars` (`scripts/daily_bars.py`) pulls
+  NQ=F 1m/5m and ^VIX daily from Yahoo into `data/warehouse/market.duckdb` (gitignored, never
+  committed). Upsert keyed by (symbol, interval, ts), so re-runs are safe and Yahoo revisions
+  overwrite. Retries use exponential backoff. `bar_coverage` flags each expected trading day as
+  ok / partial / missing / in_progress, plus `recoverable` (1m: 7 days, 5m: 55 days). A flagged
+  day older than the window can never be refilled. The demo never depends on this store.
+- **Scheduling**: run `make bars` at least every few days (daily is best) on the user's machine,
+  e.g. cron `5 23 * * 1-5 cd ~/trading-analytics && make bars`. Claude does not install schedules.

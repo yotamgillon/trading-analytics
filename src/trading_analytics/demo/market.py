@@ -14,6 +14,8 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
+from trading_analytics.market.sessions import HOLIDAYS as SESSION_HOLIDAYS
+
 ET = ZoneInfo("America/New_York")
 TICK = 0.25
 BARS_PER_DAY = 480  # 08:30-16:29 ET start times
@@ -22,15 +24,8 @@ RTH_BARS = 390
 SUBSTEPS = 6  # micro-steps per bar so high/low are realistic
 START_PRICE = 30_000.0
 
-# US index-futures closures inside the demo window (no bars, no trades).
-HOLIDAYS = {
-    date(2026, 1, 19),
-    date(2026, 2, 16),
-    date(2026, 4, 3),
-    date(2026, 5, 25),
-    date(2026, 6, 19),
-    date(2026, 7, 3),
-}
+# Same holiday table as the real-market calendar (no bars, no trades on those days).
+HOLIDAYS = SESSION_HOLIDAYS
 
 
 def trading_days(start: date, n_days: int) -> list[date]:
