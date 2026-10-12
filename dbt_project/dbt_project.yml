@@ -14,6 +14,12 @@ vars:
   # which is estimated per contract-day and removed first.
   fill_bar_tol_pts: 5.0
   vol_lookback_bars: 30
+  # How a trade is classified win/loss: by 'gross' (default, as Lucid shows avg win/loss) or 'net'.
+  win_loss_basis: gross
+  # Equity = start_balance + cumulative NET P&L. 0 means "equity relative to the first trade"
+  # (the prop-firm balance is not in the export). Drawdown % is only defined when the running
+  # percent is only produced when you set a real starting balance (> 0).
+  start_balance: 0
 
 models:
   trading_analytics:
@@ -23,6 +29,9 @@ models:
     intermediate:
       +materialized: table
       +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
 
 seeds:
   trading_analytics:

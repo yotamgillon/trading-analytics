@@ -79,3 +79,34 @@ models:
       - name: mae_mfe_basis
         tests:
           - accepted_values: {values: ['bars', 'fills_only']}
+
+  # ---- marts -------------------------------------------------------------------------
+  - name: fct_trades_enriched
+    columns:
+      - name: trade_id
+        tests: [unique, not_null]
+      - name: outcome
+        tests:
+          - accepted_values: {values: ['win', 'loss', 'scratch']}
+  - name: mart_equity_curve
+    tests:
+      - unique_grain: {columns: [account, symbol_scope, trade_id]}
+    columns:
+      - name: drawdown_usd
+        tests:
+          - not_null
+  - name: mart_streaks
+    tests:
+      - unique_grain: {columns: [account, symbol_scope, streak_id]}
+  - name: mart_kpis
+    tests:
+      - unique_grain: {columns: [account, symbol_scope]}
+  - name: mart_daily_performance
+    tests:
+      - unique_grain: {columns: [account, symbol, trade_date]}
+  - name: mart_perf_hour_weekday
+    tests:
+      - unique_grain: {columns: [account, weekday_num, hour_et]}
+  - name: mart_perf_by_dimension
+    tests:
+      - unique_grain: {columns: [account, dimension, bucket]}
