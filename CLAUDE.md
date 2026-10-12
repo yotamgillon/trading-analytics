@@ -152,3 +152,10 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
 - **Lean runtime vs pipeline**: `[project].dependencies` (and `requirements.txt`, kept in sync by a
   test) are only what the dashboard needs; dbt-duckdb and yfinance live in the `pipeline` extra
   (`uv sync --all-extras`). A test runs the app with dbt and yfinance unimportable.
+- **Docker (Phase 9)**: `make docker-build` / `make docker-run` / `make docker-smoke`. The image is
+  the lean runtime only (`uv sync --frozen --no-dev`, no extras), non-root, with a healthcheck, and
+  serves the committed synthetic demo database. `.dockerignore` is an allow-list (`*` then only
+  src, the mart SQL, pyproject/uv.lock and `data/demo/demo.duckdb`), so private data cannot enter the
+  build context; `scripts/docker_smoke.sh` (also run in CI) checks the image holds exactly that one
+  database, runs as non-root, becomes healthy and renders 500 trades. To view private data in
+  Docker, mount the file read-only: `-v $PWD/data/warehouse/private.duckdb:/app/data/warehouse/private.duckdb:ro`.

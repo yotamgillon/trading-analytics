@@ -1,4 +1,4 @@
-.PHONY: setup test lint guard demo-data demo-db bars quality quality-demo reconcile ingest transform dashboard all
+.PHONY: setup test lint guard demo-data demo-db docker-build docker-run docker-smoke bars quality quality-demo reconcile ingest transform dashboard all
 
 setup:  ## install deps and enable the git hook that blocks private data
 	uv sync --all-extras
@@ -19,6 +19,15 @@ demo-data:  ## regenerate the synthetic demo export + bars (data/demo/)
 
 demo-db:  ## rebuild the committed synthetic demo database data/demo/demo.duckdb
 	uv run python scripts/build_demo_db.py
+
+docker-build:  ## build the dashboard image (synthetic demo database baked in)
+	docker build -t trading-analytics .
+
+docker-run:  ## serve the dashboard on http://localhost:8501
+	docker run --rm -p 8501:8501 trading-analytics
+
+docker-smoke:  ## image checks: contents, health, app renders (needs the image)
+	scripts/docker_smoke.sh trading-analytics
 
 bars:  ## fetch/accumulate real Yahoo bars into data/warehouse/market.duckdb (gitignored)
 	uv run python scripts/daily_bars.py

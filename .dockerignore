@@ -1,0 +1,11 @@
+# Allow-list: everything is excluded unless re-included below, so a new private file can never
+# slip into the build context. data/private, data/warehouse, .git, .env, tests... are all out.
+*
+!pyproject.toml
+!uv.lock
+!src
+!dbt_project/macros
+!dbt_project/models/marts
+!data/demo/demo.duckdb
+**/__pycache__
+**/*.pyc
