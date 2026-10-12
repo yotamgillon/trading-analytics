@@ -159,3 +159,12 @@ Commands: `make setup | test | lint | guard | ingest | transform | dashboard | a
   build context; `scripts/docker_smoke.sh` (also run in CI) checks the image holds exactly that one
   database, runs as non-root, becomes healthy and renders 500 trades. To view private data in
   Docker, mount the file read-only: `-v $PWD/data/warehouse/private.duckdb:/app/data/warehouse/private.duckdb:ro`.
+- **README + screenshots (Phase 9)**: `README.md` has the Mermaid architecture and data-model
+  diagrams (validated with mermaid.parse), How to run, Key decisions, Verification, Limitations and
+  the Streamlit Cloud click-through; `tests/test_readme.py` guards links, diagrams and required
+  sections. Screenshots are regenerated with `uv run --with playwright python
+  scripts/take_screenshots.py` from the DEMO database only (the private warehouse path is pointed at
+  a non-existent file and the run aborts unless the page says "Demo data"). Streamlit renders `$...$`
+  as LaTeX: dynamic text goes through `format.md()` which escapes dollars. The Streamlit chart height
+  includes legend and axes, so the heatmap adds `CHROME_PX` on top of 64px per row. The app puts
+  `src/` on `sys.path` so it runs on Cloud with only `requirements.txt` (`make cloud-check`).
