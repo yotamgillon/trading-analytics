@@ -1,0 +1,19 @@
+# Real trade data: never commit
+data/private/*
+!data/private/.gitkeep
+data/warehouse/*
+!data/warehouse/.gitkeep
+*.duckdb
+*.duckdb.wal
+.env
+
+# Python / tooling
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dbt_project/target/
+dbt_project/logs/
+.DS_Store
