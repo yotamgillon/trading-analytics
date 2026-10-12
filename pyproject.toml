@@ -5,6 +5,7 @@ description = "End-to-end futures trade analytics pipeline: ingest, model in SQL
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "pandas>=3.0.6",
+    "pyarrow>=26.0.0",
     "pyyaml>=6.0.3",
 ]
 
